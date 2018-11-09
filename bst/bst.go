@@ -154,58 +154,57 @@ func (b bst) postOrder(rootNode *Node) {
 
 // 层序遍历
 func (b bst) LevelOrder() {
-	var queue = make([]*Node, 0, 0)
-	var node *Node
-	var level = 0
-	// 当前层的结尾节点
-	var lastNode = b.root
-	// 当前节点的左/右孩子
-	var curLastNode *Node
+	var (
+		lastNode        *Node
+		currentNextNode *Node
+		currentNode     *Node
+		queue           []*Node
+		levelCache      []interface{}
+		level           int
+	)
+	level = 0
+	lastNode = b.root
+	currentNextNode = nil
+	queue = make([]*Node, 0, 0)
+	levelCache = make([]interface{}, 0, 0)
 
-	var cache = make([]interface{}, 0, 0) // 用于缓存一层中的所有元素
 	queue = append(queue, b.root)
 
 	for len(queue) != 0 && lastNode != nil {
-		node = queue[0]
+		currentNode = queue[0]
 		queue = queue[1:]
-
-		if node == nil {
-			cache = append(cache, "nil")
+		if currentNode != nil {
+			levelCache = append(levelCache, currentNode.Value)
 		} else {
-			cache = append(cache, node.Value)
+			levelCache = append(levelCache, "nil")
 		}
-
-		if node != nil {
-			// 左孩子不为空，入队列
-			if node.LeftChild != nil {
-				queue = append(queue, node.LeftChild)
-				curLastNode = node.LeftChild
-			} else if node.LeftChild == nil {
-				queue = append(queue, nil)
-				curLastNode = nil
+		if currentNode != nil {
+			queue = append(queue, currentNode.LeftChild)
+			queue = append(queue, currentNode.RightChild)
+			if currentNode.RightChild != nil {
+				currentNextNode = currentNode.RightChild
+			} else {
+				currentNextNode = currentNode.LeftChild
 			}
-			// 右孩子不为空，入队列
-			if node.RightChild != nil {
-				queue = append(queue, node.RightChild)
-				curLastNode = node.RightChild
-			} else if node.RightChild == nil {
-				queue = append(queue, nil)
-				curLastNode = nil
+		}
+		if lastNode == currentNode {
+			lastNode = currentNextNode
+			for getLevelCount(level) != len(levelCache) {
+				levelCache = append(levelCache, "nil")
 			}
-
-			// 当前节点是改成的结尾节点
-			if node == lastNode {
-				fmt.Printf("第%d层: %v\r\n", level, cache)
-				cache = cache[0:0]
-				level++
-				// 如果该节点是结尾节点
-				// 那么该节点的左/右孩子，就是下一层的结尾节点
-				lastNode = curLastNode
-			}
-		} else {
-			queue = append(queue, nil)
+			fmt.Printf("第%d层: %v\r\n", level, levelCache)
+			levelCache = levelCache[0:0]
+			level++
 		}
 	}
+}
+
+func getLevelCount(level int) int {
+	var count = 1
+	for i := 0; i < level; i++ {
+		count = count * 2
+	}
+	return count
 }
 
 // 删除BST中值最小的节点，并返回删除节点的值
@@ -305,19 +304,17 @@ func (b *bst) remove(rootNode *Node, value interface{}) *Node {
 		rootNode.RightChild = b.remove(rootNode.RightChild, value)
 	} else {
 		// 待删除的节点
-
+		b.size--
 		if rootNode.LeftChild == nil {
 			// 如果左子树是空
 			var rightChild = rootNode.RightChild
 			rootNode.RightChild = nil
-			b.size--
 			return rightChild
 		}
 		if rootNode.RightChild == nil {
 			// 如果右子树是空
 			var leftChild = rootNode.LeftChild
-			rootNode.RightChild = nil
-			b.size--
+			rootNode.LeftChild = nil
 			return leftChild
 		}
 		// 均不为空
